@@ -1,0 +1,152 @@
+REPORT zmus_prg2.
+
+TYPES: BEGIN OF lty_data,
+         vbeln TYPE vbeln_va,
+         erdat TYPE erdat,
+         erzet TYPE erzet,
+         audat TYPE audat,
+         vbtyp TYPE vbtyp,
+         vkorg TYPE vkorg,
+         spart TYPE spart,
+         vtweg TYPE vtweg,
+         lifsk TYPE lifsk,
+         posnr  type posnr_va,
+         matnr type matnr,
+       END OF lty_data.
+
+DATA: lt_data TYPE TABLE OF lty_data.
+DATA: lwa_data TYPE lty_data.
+
+DATA: lt_fieldcat TYPE slis_t_fieldcat_alv.
+DATA: lwa_fieldcat TYPE slis_t_fieldcat_alv.
+
+
+
+SELECTION-SCREEN : BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-000.
+PARAMETERS: p_cl TYPE c RADIOBUTTON GROUP r1.
+PARAMETERS: p_alv TYPE c RADIOBUTTON GROUP r1.
+PARAMETERS: p_pop TYPE c RADIOBUTTON GROUP r1.
+SELECTION-SCREEN : END OF BLOCK b1.
+
+START-OF-SELECTION.
+  SELECT a~vbeln a~erdat a~erzet a~audat a~vbtyp a~vkorg a~spart a~vtweg a~lifsk b~posnr b~matnr
+    FROM vbak as a join
+         vbap as b on
+        a~vbeln = b~vbeln
+    INTO TABLE lt_data
+    UP TO 100 ROWS.
+
+*  IF sy-subrc = 0.
+    IF p_cl = 'X'.
+      PERFORM display_cl.
+    ELSEIF p_alv = 'X'.
+      PERFORM dis_alv.
+    ELSEIF p_pop = 'X'.
+       PERFORM dis_pop.
+*      MESSAGE: TEXT-010 TYPE 'E'.
+*    ENDIF.
+*  ELSE.
+*    MESSAGE: TEXT-011 TYPE 'I'.
+
+  ENDIF.
+
+
+FORM display_cl.
+  LOOP AT lt_data INTO lwa_data.
+    WRITE:/ lwa_data-vbeln UNDER TEXT-001,'|',
+            lwa_data-erdat UNDER TEXT-002,'|',
+            lwa_data-erzet UNDER TEXT-003,'|',
+            lwa_data-audat UNDER TEXT-004,'|',
+            lwa_data-vbtyp UNDER TEXT-005,'|',
+            lwa_data-vkorg UNDER TEXT-006,'|',
+            lwa_data-spart UNDER TEXT-007,'|',
+            lwa_data-vtweg UNDER TEXT-008,'|',
+            lwa_data-lifsk UNDER TEXT-009,'|',
+            lwa_data-posnr UNDER TEXT-012,'|',
+            lwa_data-matnr UNDER TEXT-013.
+    uline.
+  endloop.
+
+ENDFORM.
+
+*end-of-SELECTION.
+*  WRITE:/ TEXT-000.
+
+TOP-OF-PAGE.
+  WRITE:/ TEXT-001 COLOR 7,
+       16 TEXT-002 COLOR 7,
+       28 TEXT-003 COLOR 7,
+       40 TEXT-004 COLOR 7,
+       59 TEXT-005 COLOR 7,
+       76 TEXT-006 COLOR 7,
+       88 TEXT-007 COLOR 7,
+       98 TEXT-008 COLOR 7,
+      114 TEXT-009 COLOR 7,
+      126 Text-012 COLOR 7,
+      136 text-013 COLOR 7.
+
+FORM dis_alv.
+  CALL FUNCTION 'REUSE_ALV_FIELDCATALOG_MERGE'
+    EXPORTING
+      i_structure_name       = 'ZMUS_STR_PRG1'
+*     I_CLIENT_NEVER_DISPLAY = 'X'
+*     I_INCLNAME             =
+*     I_BYPASSING_BUFFER     =
+*     I_BUFFER_ACTIVE        =
+    CHANGING
+      ct_fieldcat            = lt_fieldcat
+    EXCEPTIONS
+      inconsistent_interface = 1
+      program_error          = 2
+      OTHERS                 = 3.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      it_fieldcat   = lt_fieldcat
+    TABLES
+      t_outtab      = lt_data
+    EXCEPTIONS
+      program_error = 1
+      OTHERS        = 2.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+ENDFORM.
+
+Form dis_pop.
+CALL FUNCTION 'REUSE_ALV_POPUP_TO_SELECT'
+  EXPORTING
+   I_TITLE                       = 'Sales order'
+*   I_SELECTION                   = 'X'
+   I_ALLOW_NO_SELECTION          = 'X'
+   I_ZEBRA                       = 'X'
+*   I_SCREEN_START_COLUMN         = 0
+*   I_SCREEN_START_LINE           = 0
+*   I_SCREEN_END_COLUMN           = 0
+*   I_SCREEN_END_LINE             = 0
+*   I_CHECKBOX_FIELDNAME          =
+*   I_LINEMARK_FIELDNAME          =
+*   I_SCROLL_TO_SEL_LINE          = 'X'
+    i_tabname                     = 'lt_data'
+   I_STRUCTURE_NAME              = 'ZMUS_STR_PRG1'
+*   IT_FIELDCAT                   =
+*   IT_EXCLUDING                  =
+*   I_CALLBACK_PROGRAM            =
+*   I_CALLBACK_USER_COMMAND       =
+*   IS_PRIVATE                    =
+* IMPORTING
+*   ES_SELFIELD                   =
+*   E_EXIT                        =
+  tables
+    t_outtab                      = lt_data
+* EXCEPTIONS
+*   PROGRAM_ERROR                 = 1
+*   OTHERS                        = 2
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+ENDFORM.
